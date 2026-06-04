@@ -13,6 +13,7 @@ It is based on Toni Macaroni's RedManager, but the main loader flow has been cha
 This public manager does not include the private OpenACAI anti-cheat/admin mod.
 
 Brand asset provenance is documented in `BRANDING.md`.
+Upstream/fork lineage is documented in `UPSTREAMS.md`.
 
 ## Development
 
