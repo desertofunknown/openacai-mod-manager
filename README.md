@@ -27,12 +27,14 @@ Upstream/fork lineage is documented in `UPSTREAMS.md`.
 
 The current Windows builds are kept in `prebuilt/` for direct GitHub downloads:
 
-- [Windows portable executable](prebuilt/OpenACAI-Mod-Manager-0.1.0-x64-portable.exe)
-- [Windows setup executable](prebuilt/OpenACAI-Mod-Manager-0.1.0-x64-setup.exe)
-- [Windows MSI](prebuilt/OpenACAI-Mod-Manager-0.1.0-x64.msi)
+- [Windows portable executable](prebuilt/OpenACAI-Mod-Manager-0.1.1-x64-portable.exe)
+- [Windows setup executable](prebuilt/OpenACAI-Mod-Manager-0.1.1-x64-setup.exe)
+- [OpenACAI icon](prebuilt/OpenACAI-Mod-Manager.ico)
 - [SHA256 checksums](prebuilt/SHA256SUMS.txt)
 
-GitHub release assets should mirror this folder when tagged releases are created.
+These builds are unsigned, so Windows SmartScreen and some browsers may warn on first download. Verify the SHA256 checksum before running. Code-signing guidance is documented in `SIGNING.md`.
+
+GitHub release assets should mirror this folder when tagged releases are created. MSI builds are intentionally not published while the current MSI launch issue is investigated.
 
 Local test-copy workflow is documented in `LOCAL_TESTING.md`.
 

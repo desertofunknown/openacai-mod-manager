@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "0.1.0",
+    [string]$Version = "0.1.1",
     [switch]$Build
 )
 
@@ -20,7 +20,7 @@ if ($Build) {
 
 $PortableSource = Join-Path $RepoRoot "src-tauri\target\release\OpenACAI Mod Manager.exe"
 $SetupSource = Join-Path $RepoRoot "src-tauri\target\release\bundle\nsis\OpenACAI Mod Manager_${Version}_x64-setup.exe"
-$MsiSource = Join-Path $RepoRoot "src-tauri\target\release\bundle\msi\OpenACAI Mod Manager_${Version}_x64_en-US.msi"
+$IconSource = Join-Path $RepoRoot "src-tauri\icons\openacai.ico"
 
 $Artifacts = @(
     @{
@@ -32,13 +32,15 @@ $Artifacts = @(
         Name = "OpenACAI-Mod-Manager-$Version-x64-setup.exe"
     },
     @{
-        Source = $MsiSource
-        Name = "OpenACAI-Mod-Manager-$Version-x64.msi"
+        Source = $IconSource
+        Name = "OpenACAI-Mod-Manager.ico"
     }
 )
 
 New-Item -ItemType Directory -Force -Path $PrebuiltDir | Out-Null
 New-Item -ItemType Directory -Force -Path $LocalTestDir | Out-Null
+Get-ChildItem -LiteralPath $PrebuiltDir -Filter "OpenACAI-Mod-Manager-*" -File | Remove-Item -Force
+Get-ChildItem -LiteralPath $LocalTestDir -Filter "OpenACAI-Mod-Manager-*" -File | Remove-Item -Force
 
 $checksumLines = New-Object System.Collections.Generic.List[string]
 foreach ($artifact in $Artifacts) {
