@@ -1,30 +1,62 @@
 # Code Signing
 
-The current public Windows builds are unsigned. Windows SmartScreen and some browsers can warn on unsigned executables, especially from a new GitHub project with little reputation.
+The public Windows builds should be signed before release. Checksums help users verify that a download matches this repository, but checksums do not replace Authenticode signing.
 
-Checksums help users verify that a download matches the file published by this repository, but checksums do not replace code signing.
+## Azure Artifact Signing
 
-## Recommended Signing Path
+Microsoft has rebranded Azure Trusted Signing as Azure Artifact Signing. Use a Public Trust certificate profile for public GitHub downloads and SmartScreen reputation.
 
-1. Obtain an OV or EV code-signing certificate for OpenACAI/Alex Cooper.
-2. Install the certificate in the Windows certificate store on the release build machine.
-3. Configure Tauri's Windows signing options in `src-tauri/tauri.conf.json` or inject them during release automation:
+Azure setup, done in the Azure portal:
 
-```json
-{
-  "tauri": {
-    "bundle": {
-      "windows": {
-        "certificateThumbprint": "CERTIFICATE_SHA1_THUMBPRINT",
-        "digestAlgorithm": "sha256",
-        "timestampUrl": "http://timestamp.digicert.com"
-      }
-    }
-  }
-}
+1. Create an Artifact Signing account in a supported region.
+2. Assign yourself `Artifact Signing Identity Verifier` so you can submit identity validation.
+3. Create an Organization/Public identity validation for the legal OpenACAI nonprofit entity.
+4. Complete the identity and document checks from the email/Azure portal flow.
+5. Create a Public Trust certificate profile from the completed identity validation.
+6. Assign the release signer identity `Artifact Signing Certificate Profile Signer` on the account or profile.
+
+Identity validation requires legal nonprofit/business details and can take days. Keep the Azure nonprofit grant subscription selected if the grant is intended to cover signing costs.
+
+## Local Signing
+
+Set these environment variables before signing:
+
+```powershell
+$env:AZURE_ARTIFACT_SIGNING_ENDPOINT = "https://eus.codesigning.azure.net"
+$env:AZURE_ARTIFACT_SIGNING_ACCOUNT_NAME = "your-artifact-signing-account"
+$env:AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE = "your-public-profile"
 ```
 
-Do not commit private keys, certificate passwords, or token credentials.
+Optional:
+
+```powershell
+$env:AZURE_ARTIFACT_SIGNING_CORRELATION_ID = "openacai-mod-manager-0.1.2"
+$env:SIGNTOOL_EXE = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
+$env:AZURE_ARTIFACT_SIGNING_DLIB = "C:\path\to\Azure.CodeSigning.Dlib.dll"
+```
+
+Then sign the current prebuilts:
+
+```powershell
+.\scripts\sign-prebuilt.ps1
+```
+
+Or rebuild, refresh, sign, and rewrite checksums in one command:
+
+```powershell
+.\scripts\refresh-prebuilt.ps1 -Build -Sign
+```
+
+The signing script:
+
+- Finds the latest installed x64 Windows SDK `signtool.exe`.
+- Downloads `nuget.exe` locally if needed.
+- Restores `Microsoft.ArtifactSigning.Client` into `.tools/artifact-signing`.
+- Generates an ignored metadata JSON file for the account/profile.
+- Signs the portable and setup EXEs with SHA256 and Microsoft timestamping.
+- Verifies signatures and refreshes `prebuilt/SHA256SUMS.txt`.
+
+Do not commit private keys, certificate passwords, service-principal secrets, generated metadata files, or token credentials.
 
 ## Current Mitigation
 

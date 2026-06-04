@@ -91,6 +91,8 @@ out
 .nuxt
 dist
 local-test/
+.tools/
+signing-metadata*.json
 
 # Gatsby files
 .cache/
