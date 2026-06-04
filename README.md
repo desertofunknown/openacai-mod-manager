@@ -1,36 +1,34 @@
-# RedManager
+# OpenACAI Mod Manager
 
-<p align="center">
-    <a alt="total downloads">
-        <img src="https://img.shields.io/github/downloads/ToniMacaroni/RedManager/total" /></a>
-    <a href="https://github.com/ToniMacaroni/SaberFactory/releases" alt="latest version">
-        <img src="https://img.shields.io/github/v/tag/ToniMacaroni/RedManager?label=version" /></a>
-</p>
+Developer: Alex Cooper
 
----
+OpenACAI Mod Manager is a Tauri/Svelte manager for installing and maintaining the OpenACAI Loader package for Sons of the Forest.
 
-The RedManager is a general tool for installing/uninstalling/updating different features
-of the [RedLoader](https://github.com/ToniMacaroni/RedLoader) ecosystem as well as general Sons of the Forest modding features.
+It is based on Toni Macaroni's RedManager, but the main loader flow has been changed for OpenACAI Loader:
 
-**:arrow_forward:[DOWNLOAD FROM HERE](https://github.com/ToniMacaroni/RedManager/releases):arrow_backward:**  
-*This will take you to the releases page*
+- Select and install a local `OpenACAILoader.zip`.
+- Detect the OpenACAI Loader bridge through `BepInEx\plugins\OpenACAILoader` and `BepInEx\plugins\RedLoaderBepInExCompat`.
+- Keep old RedLoader/MelonLoader cleanup affordances so users can avoid competing loader bootstraps.
 
----
+This public manager does not include the private OpenACAI anti-cheat/admin mod.
 
-## Getting Started
+## Development
 
-You are probably here to install the RedLoader. To do that:
-1) Start the RedManager.
-2) The manager should automatically detect your path. If not, you can set it manually.
-3) Click on the "Install RedLoader" button.
+```powershell
+npm ci
+npm run check
+npm run build
+```
 
-If you want to double check the installation, check if the following files exist in your game directory:
-- `_RedLoader` folder
-- `dobby.dll` file
-- `version.dll` file
+For the desktop shell:
 
-## Additional Features
-Beyond the above mentioned features, the RedManager can also:
-- Clear any data from old loaders.
-- *For modders*: Install the extended UnityExplorer.
-- *For modders*: Setup the mod template and quickly create new projects.
+```powershell
+npm run tauri dev
+```
+
+## Licensing
+
+OpenACAI-authored manager changes are licensed under `GPL-3.0-or-later`.
+
+The original RedManager project is licensed under `Apache-2.0`; its license text is preserved in `LICENSES/Apache-2.0.txt`, and attribution is preserved in `THIRD_PARTY_NOTICES.md`.
+

@@ -1,9 +1,8 @@
 import { BaseZipInstaller } from "./baseZipInstaller";
-import { redLoaderInfo } from "./githubInfo";
 import { getDirectoryPath, gameExePath, processName, processProgress } from "./store"
 import { get } from 'svelte/store'
 import { fs, http } from "@tauri-apps/api";
-import { TempFileCache } from "./TempFileCache";
+import { TempFileCache } from "./tempFileCache";
 import { download } from "tauri-plugin-upload-api";
 
 
@@ -20,7 +19,12 @@ export abstract class BaseWebInstaller extends BaseZipInstaller {
     const exePath = get(gameExePath);
     const exeDir = await getDirectoryPath();
 
-    const selectedVersion = await redLoaderInfo.getLatest();
+    const selectedVersion = await this.getTargetVersion();
+    if (!selectedVersion) {
+      console.log(`Couldn't find a target version for ${this.getName()}!`);
+      return;
+    }
+
     await this.newInstall(exeDir, selectedVersion);
   }
 

@@ -6,7 +6,7 @@ export class BaseUninstaller {
     private filesToClear: string[];
     private name: string;
 
-    public overrideCheckFiles: string[] | null;
+    public overrideCheckFiles: string[] | null = null;
 
     constructor(
         foldersToClear: string[],

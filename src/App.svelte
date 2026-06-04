@@ -14,6 +14,7 @@
   import Page4 from "./pages/Modding.svelte";
   import Page5 from "./pages/ModPacks.svelte";
   import { onMount } from "svelte";
+  import type { ComponentType } from "svelte";
   import { fade } from "svelte/transition";
   import { invoke } from "@tauri-apps/api";
   import MdiStore24Hour from "virtual:icons/mdi/store-24-hour";
@@ -27,7 +28,13 @@
     showOverlay = value;
   });
 
-  let tabs = [
+  type Tab = {
+    label: string;
+    component: ComponentType;
+    icon: ComponentType;
+  };
+
+  let tabs: Tab[] = [
     { label: "Main", component: Page1, icon: UilArrowCircleDown },
     { label: "Mods", component: Page2, icon: UilBox },
     // { label: "Mod Packs", component: Page5, icon: MdiStore24Hour },
@@ -37,11 +44,11 @@
 
   let activeTabComponent = tabs[0].component;
 
-  function selectTab(tabComponent) {
+  function selectTab(tabComponent: ComponentType) {
     activeTabComponent = tabComponent;
   }
 
-  function handleKeyPress(event: KeyboardEvent, tabComponent) {
+  function handleKeyPress(event: KeyboardEvent, tabComponent: ComponentType) {
     if (event.key === "Enter" || event.key === " ") {
       selectTab(tabComponent);
     }

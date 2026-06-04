@@ -7,8 +7,8 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "RedModManager",
-    "version": "1.1.9"
+    "productName": "OpenACAI Mod Manager",
+    "version": "0.1.0"
   },
   "tauri": {
     "allowlist": {
@@ -56,7 +56,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tonimacaroni.redmodmanager",
+      "identifier": "com.alexcooper.openacai.modmanager",
       "icon": [
         "icons/logo_img.png",
         "icons/logo_icon.ico"
@@ -69,7 +69,7 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "RedModManager",
+        "title": "OpenACAI Mod Manager",
         "width": 800,
         "height": 650
       }

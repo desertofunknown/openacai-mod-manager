@@ -2,12 +2,12 @@
     import { shell } from "@tauri-apps/api";
     import InstallFeature from "../lib/InstallationComponent.svelte";
     import PathSelector from "../lib/PathSelector.svelte";
-    import { debugInstaller, loaderFeature, bieFeature, melonFeature } from "../lib/featureInstaller";
+    import { openAcaiLoaderFeature, melonFeature } from "../lib/featureInstaller";
     import { gameExePath, isPathValid, isDotnetInstalled, getDirectoryPath } from "../lib/store";
     import { get } from "svelte/store";
     import redLogo from "/redlogo.png";
 
-    let features = [bieFeature, melonFeature, loaderFeature];
+    let features = [melonFeature, openAcaiLoaderFeature];
 
     async function openFolder() {
         await shell.open(await getDirectoryPath());

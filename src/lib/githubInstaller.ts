@@ -10,7 +10,7 @@ export class GithubInstaller extends BaseWebInstaller {
   }
 
   protected async getDownloadUrl(version: string): Promise<string> {
-    return this._repo.getDownloadLink(await this._repo.getLatest());
+    return this._repo.getDownloadLink(version);
   }
 
   public getTargetVersion(): Promise<string | null> {

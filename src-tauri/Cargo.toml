@@ -1,9 +1,9 @@
 [package]
-name = "RedModManager"
-version = "0.0.0"
-description = "An installer and mod manager for the RedLoader mod loader."
-authors = ["Toni Macaroni"]
-license = ""
+name = "openacai-mod-manager"
+version = "0.1.0"
+description = "OpenACAI mod manager for the BepInEx-first OpenACAI Loader with RedLoader compatibility."
+authors = ["Alex Cooper"]
+license = "GPL-3.0-or-later"
 repository = ""
 edition = "2021"
 
