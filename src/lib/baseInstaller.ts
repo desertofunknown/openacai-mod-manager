@@ -5,7 +5,11 @@ export class BaseInstaller {
         this._name = name;
     }
 
-    public async install() {
+    public async prepare(): Promise<boolean> {
+        return true;
+    }
+
+    public async install(): Promise<void> {
     }
 
     public getName(): string {

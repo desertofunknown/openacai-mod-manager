@@ -46,6 +46,12 @@ export class FeatureInstaller {
             return;
         }
 
+        processName.set("Preparing " + this.getName() + "...");
+        if (!await this._installer.prepare()) {
+            processName.set(this.getName() + " installation canceled.");
+            return;
+        }
+
         await this.uninstall();
         processName.set("Installing " + this.getName() + "...");
         await this._installer.install();

@@ -18,12 +18,13 @@
     processing.set(true);
     processProgress.set(0);
 
-    await callback();
-
-    processing.set(false);
-
-    currentMode = feature.currentModeState;
-    await refreshVisibility();
+    try {
+      await callback();
+    } finally {
+      processing.set(false);
+      currentMode = feature.currentModeState;
+      await refreshVisibility();
+    }
   }
 
   async function handleDefault() {

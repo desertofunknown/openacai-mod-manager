@@ -6,15 +6,11 @@ import { TempFileCache } from './tempFileCache';
 import { download } from 'tauri-plugin-upload-api';
 
 export async function unzip(sourcePath: string, destinationPath: string) {
-    try {
-        const src = sourcePath.replace(/\\/g, '/');
-        const dest = destinationPath.replace(/\\/g, '/');
-        if(!exists(src)) throw new Error('Source file does not exist!');
-        if(!exists(dest)) throw new Error('Destination folder does not exist!');
-        await invoke('unzip_handler', { source: src, destination: dest });
-    } catch (error) {
-        console.error('Failed to unzip:', error);
-    }
+    const src = sourcePath.replace(/\\/g, '/');
+    const dest = destinationPath.replace(/\\/g, '/');
+    if(!await exists(src)) throw new Error('Source file does not exist!');
+    if(!await exists(dest)) throw new Error('Destination folder does not exist!');
+    await invoke('unzip_handler', { source: src, destination: dest });
 }
 
 export async function downloadAndInstall(destination: string, downloadUrl: string, downloadName: string): Promise<void> {
