@@ -19,7 +19,18 @@ Identity validation requires legal nonprofit/business details and can take days.
 
 ## Local Signing
 
-Set these environment variables before signing:
+The OpenACAI public signing identity is:
+
+```text
+CN=OpenACAI Inc, O=OpenACAI Inc, L=Farmington, S=Missouri, C=US
+Thumbprint: 8402188618D8D3CC02A6F885EE2AB8B7A5E5481A
+Serial: 330001AA67AE1A924D42711E1300000001AA67
+Identity validation: d00cf1a3-c3a3-4890-8b2e-c1576d258506
+```
+
+The identity validation ID is an Azure-side validation record. It is not the same thing as the certificate profile name used by SignTool.
+
+For Azure Artifact Signing, set these environment variables before signing:
 
 ```powershell
 $env:AZURE_ARTIFACT_SIGNING_ENDPOINT = "https://eus.codesigning.azure.net"
@@ -41,6 +52,19 @@ Then sign the current prebuilts:
 .\scripts\sign-prebuilt.ps1
 ```
 
+For a locally installed certificate/private key or hardware-token certificate, use the thumbprint path:
+
+```powershell
+$env:CODESIGN_CERT_THUMBPRINT = "8402188618D8D3CC02A6F885EE2AB8B7A5E5481A"
+.\scripts\sign-prebuilt.ps1 -SigningMode Thumbprint
+```
+
+If the certificate is installed in the machine store instead of the current-user store:
+
+```powershell
+$env:CODESIGN_CERT_STORE_LOCATION = "LocalMachine"
+```
+
 Or rebuild, refresh, sign, and rewrite checksums in one command:
 
 ```powershell
@@ -52,7 +76,8 @@ The signing script:
 - Finds the latest installed x64 Windows SDK `signtool.exe`.
 - Downloads `nuget.exe` locally if needed.
 - Restores `Microsoft.ArtifactSigning.Client` into `.tools/artifact-signing`.
-- Generates an ignored metadata JSON file for the account/profile.
+- Generates an ignored metadata JSON file for the account/profile when Azure signing is used.
+- Can sign through Azure Artifact Signing or a locally installed certificate selected by thumbprint.
 - Signs the portable and setup EXEs with SHA256 and Microsoft timestamping.
 - Verifies signatures and refreshes `prebuilt/SHA256SUMS.txt`.
 
