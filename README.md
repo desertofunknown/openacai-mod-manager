@@ -1,5 +1,9 @@
 # OpenACAI Mod Manager
 
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![Built With: Tauri](https://img.shields.io/badge/built%20with-Tauri-5aa8ff.svg)](https://tauri.app/)
+[![Game: Sons Of The Forest](https://img.shields.io/badge/game-Sons%20Of%20The%20Forest-38d68d.svg)](https://store.steampowered.com/app/1326470/Sons_Of_The_Forest/)
+
 Developer: Alex Cooper
 
 OpenACAI Mod Manager is a Tauri/Svelte manager for installing and maintaining the OpenACAI Loader package for Sons of the Forest.
@@ -14,6 +18,20 @@ This public manager does not include the private OpenACAI anti-cheat/admin mod.
 
 Brand asset provenance is documented in `BRANDING.md`.
 Upstream/fork lineage is documented in `UPSTREAMS.md`.
+
+## Screenshots
+
+![OpenACAI Mod Manager main tab](docs/screenshots/openacai-mod-manager-main.png)
+
+## Prebuilt Downloads
+
+The current Windows builds are kept in `prebuilt/` for direct GitHub downloads:
+
+- [Windows setup executable](prebuilt/OpenACAI-Mod-Manager-0.1.0-x64-setup.exe)
+- [Windows MSI](prebuilt/OpenACAI-Mod-Manager-0.1.0-x64.msi)
+- [SHA256 checksums](prebuilt/SHA256SUMS.txt)
+
+GitHub release assets should mirror this folder when tagged releases are created.
 
 ## Development
 
