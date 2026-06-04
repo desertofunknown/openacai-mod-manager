@@ -27,11 +27,14 @@ Upstream/fork lineage is documented in `UPSTREAMS.md`.
 
 The current Windows builds are kept in `prebuilt/` for direct GitHub downloads:
 
+- [Windows portable executable](prebuilt/OpenACAI-Mod-Manager-0.1.0-x64-portable.exe)
 - [Windows setup executable](prebuilt/OpenACAI-Mod-Manager-0.1.0-x64-setup.exe)
 - [Windows MSI](prebuilt/OpenACAI-Mod-Manager-0.1.0-x64.msi)
 - [SHA256 checksums](prebuilt/SHA256SUMS.txt)
 
 GitHub release assets should mirror this folder when tagged releases are created.
+
+Local test-copy workflow is documented in `LOCAL_TESTING.md`.
 
 ## Development
 
@@ -45,6 +48,12 @@ For the desktop shell:
 
 ```powershell
 npm run tauri dev
+```
+
+To refresh prebuilt files and the ignored local portable test executable:
+
+```powershell
+.\scripts\refresh-prebuilt.ps1 -Build
 ```
 
 ## Licensing

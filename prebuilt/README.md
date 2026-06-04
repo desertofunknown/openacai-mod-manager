@@ -2,9 +2,10 @@
 
 This folder contains the current Windows desktop builds of OpenACAI Mod Manager.
 
+- `OpenACAI-Mod-Manager-0.1.0-x64-portable.exe`: direct portable app executable.
 - `OpenACAI-Mod-Manager-0.1.0-x64-setup.exe`: NSIS setup executable.
 - `OpenACAI-Mod-Manager-0.1.0-x64.msi`: Windows Installer package.
-- `SHA256SUMS.txt`: checksums for both installers.
+- `SHA256SUMS.txt`: checksums for the portable executable and both installers.
 
 Dependency/source links:
 
