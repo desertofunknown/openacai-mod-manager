@@ -1,6 +1,7 @@
 import { app, fs, path} from '@tauri-apps/api'
 import { getDirectoryPath, getLibsDir, getModsDir, processName, processProgress } from './store';
 import { downloadAndInstall, showMessageBox } from './utils';
+import { scanInstalledInventory, type InstallSource, type LoaderType } from './modInventory';
 
 export type ModCategory = {
     name: String;
@@ -60,6 +61,13 @@ export type InstalledMod = {
     modName: string;
     isEnabled: boolean;
     manifest: ModManifest;
+    loaderType?: LoaderType;
+    installSource?: InstallSource;
+    store?: string;
+    vortexPackage?: string;
+    nexusModId?: string;
+    expectedLocation?: string;
+    matchKeys?: string[];
     assemblyPath?: string;
     enabledAssemblyPath?: string;
     disabledAssemblyPath?: string;
@@ -317,6 +325,56 @@ export class ModDatabase {
 
     public static async loadInstalledMods(): Promise<void> {
         this.installedMods = [];
+
+        const inventory = await scanInstalledInventory();
+        for (const entry of inventory) {
+            if (entry.loaderType === "bepinex-plugin") {
+                continue;
+            }
+
+            const packageName = entry.packagePath ? await path.basename(entry.packagePath) : entry.id;
+            const redLoaderRoot = entry.loaderType === "redloader-library"
+                ? await getLibsDir()
+                : await getModsDir();
+            const enabledPackagePath = entry.packagePath && this.isDisabledPackagePath(entry.packagePath)
+                ? await path.join(redLoaderRoot, packageName)
+                : entry.packagePath;
+            const disabledPackagePath = await path.join(redLoaderRoot, "_Disabled", packageName);
+            const enabledAssemblyPath = entry.assemblyPath
+                ? entry.assemblyPath.replace(/\.disabled$/i, ".dll")
+                : undefined;
+            const disabledAssemblyPath = entry.assemblyPath
+                ? entry.assemblyPath.replace(/\.dll$/i, ".disabled")
+                : undefined;
+
+            await this.addInstalledMod({
+                modName: entry.id,
+                isEnabled: entry.enabled,
+                manifest: {
+                    id: entry.id,
+                    author: entry.author ?? "Unknown",
+                    version: entry.version ?? "",
+                    type: entry.manifestType ?? (entry.loaderType === "redloader-library" ? "Library" : "Mod")
+                },
+                loaderType: entry.loaderType,
+                installSource: entry.installSource,
+                store: entry.store,
+                vortexPackage: entry.vortexPackage,
+                nexusModId: entry.nexusModId,
+                expectedLocation: entry.expectedLocation,
+                matchKeys: entry.matchKeys,
+                assemblyPath: entry.assemblyPath,
+                enabledAssemblyPath,
+                disabledAssemblyPath,
+                packagePath: entry.packagePath,
+                enabledPackagePath,
+                disabledPackagePath
+            });
+        }
+
+        if (this.installedMods.length !== 0) {
+            return;
+        }
 
         let modPath = await getModsDir();
         let libPath = await getLibsDir();

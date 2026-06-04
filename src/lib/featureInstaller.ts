@@ -8,7 +8,7 @@ import { redLoaderInfo, unityExplorerInfo } from "./githubInfo";
 import { fs, invoke, path } from "@tauri-apps/api";
 import { gameExePath } from "./store";
 import semver from "semver";
-import { ManualZipInstaller } from "./manualZipInstaller";
+import { OpenAcaiLoaderInstaller } from "./openAcaiLoaderUpdater";
 
 export enum InstallMode {
     Install,
@@ -171,6 +171,16 @@ export class FeatureInstaller {
 
         try {
             const exeDir = await path.dirname(get(gameExePath));
+            if (this._versionCheckPath.toLowerCase().endsWith(".json")) {
+                const manifestPath = await path.join(exeDir, this._versionCheckPath);
+                if (!await fs.exists(manifestPath)) {
+                    return null;
+                }
+
+                const manifest = JSON.parse(await fs.readTextFile(manifestPath));
+                return typeof manifest.version === "string" ? manifest.version : null;
+            }
+
             return await invoke("get_file_version", {
                 path: exeDir + "\\" + this._versionCheckPath
             });
@@ -214,7 +224,7 @@ let loaderUninstaller = new BaseUninstaller([
 
 let loaderDebugInstaller = new DebugInstaller("I:\\repos\\MelonLoader\\RedLoader.zip", "RedLoader");
 let loaderInstaller = new GithubInstaller(redLoaderInfo, "RedLoader");
-let openAcaiLoaderInstaller = new ManualZipInstaller("OpenACAI Loader", "Select OpenACAILoader.zip");
+let openAcaiLoaderInstaller = new OpenAcaiLoaderInstaller();
 
 let ueUninstaller = new BaseUninstaller([
     "Mods\\sinai-dev-UnityExplorer",
@@ -244,9 +254,9 @@ openAcaiLoaderUninstaller.overrideCheckFiles = [
     "BepInEx\\plugins\\RedLoaderBepInExCompat\\RedLoaderBepInExCompat.dll"
 ];
 
-export let openAcaiLoaderFeature = new FeatureInstaller(openAcaiLoaderInstaller, openAcaiLoaderUninstaller, "BepInEx\\plugins\\RedLoaderBepInExCompat\\RedLoaderBepInExCompat.dll");
+export let openAcaiLoaderFeature = new FeatureInstaller(openAcaiLoaderInstaller, openAcaiLoaderUninstaller, "BepInEx\\plugins\\OpenACAILoader\\openacai-loader.manifest.json");
 openAcaiLoaderFeature.additionalFoldersToCreate = ["Mods"];
-openAcaiLoaderFeature.description = "Installs the BepInEx-first OpenACAI Loader package with RedLoader mod compatibility. Select the OpenACAILoader.zip produced by the loader suite.";
+openAcaiLoaderFeature.description = "Installs or repairs the BepInEx-first OpenACAI Loader package from the public GitHub prebuilt manifest, then verifies installed file hashes.";
 
 export let ueFeature = new FeatureInstaller(ueInstaller, ueUninstaller);
 ueFeature.description = "UnityExplorer is a modding tool which lets you analyze and manipulate the game at runtime."

@@ -9,6 +9,7 @@
   } from "./lib/store";
   import Page1 from "./pages/MainPage.svelte";
   import Page2 from "./pages/Mods.svelte";
+  import Page3 from "./pages/NexusVortex.svelte";
   import Page4 from "./pages/Modding.svelte";
   import { onMount } from "svelte";
   import type { ComponentType } from "svelte";
@@ -16,6 +17,7 @@
   import { invoke } from "@tauri-apps/api";
   import UilBox from "~icons/uil/box";
   import UilArrowCircleDown from "~icons/uil/arrow-circle-down";
+  import UilCloudDownload from "~icons/uil/cloud-download";
   import UilBriefcase from '~icons/uil/briefcase'
 
   let showOverlay: boolean = false;
@@ -33,8 +35,8 @@
   let tabs: Tab[] = [
     { label: "Main", component: Page1, icon: UilArrowCircleDown },
     { label: "Mods", component: Page2, icon: UilBox },
+    { label: "Vortex", component: Page3, icon: UilCloudDownload },
     // { label: "Mod Packs", component: Page5, icon: MdiStore24Hour },
-    // { label: "Extras", component: Page3, icon: MdiStore24Hour },
     { label: "Mod Creation", component: Page4, icon: UilBriefcase },
   ];
 
@@ -68,7 +70,7 @@
     }
 
     try {
-      let hasDotnet = await invoke("is_dotnet6_installed");
+      let hasDotnet = await invoke("is_dotnet10_installed");
       console.log(hasDotnet);
       isDotnetInstalled.set(hasDotnet as boolean);
     } catch (err) {

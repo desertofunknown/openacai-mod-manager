@@ -1,6 +1,7 @@
 <script lang="ts">
   import { processProgress, processing } from './store';
     import { onMount, createEventDispatcher } from 'svelte';
+    import { dialog } from '@tauri-apps/api';
     import { ModDatabase, type Mod } from './mods';
     import StatusButton from './StatusButton.svelte';
 
@@ -29,6 +30,11 @@
     async function uninstall() {
 
       if (!mod.installedMod) {
+        return;
+      }
+
+      if (isVortexManaged()) {
+        await showVortexManagedMessage("uninstall");
         return;
       }
 
@@ -64,12 +70,22 @@
         return;
       }
 
+      if (isVortexManaged()) {
+        await showVortexManagedMessage("enable");
+        return;
+      }
+
       await ModDatabase.toggleMod(mod.installedMod, true);
       await refresh();
     }
 
     async function disableMod() {
       if (!mod.installedMod) {
+        return;
+      }
+
+      if (isVortexManaged()) {
+        await showVortexManagedMessage("disable");
         return;
       }
 
@@ -101,10 +117,59 @@
     function onImageLoad() {
       isImageLoaded = true;
     }
+
+    function isVortexManaged() {
+      return mod.installedMod?.installSource === "vortex";
+    }
+
+    async function showVortexManagedMessage(action: string) {
+      await dialog.message(
+        `${mod.name} is currently managed by Vortex/Nexus. Use Vortex to ${action} it so deployment metadata stays consistent.`,
+        {
+          title: "Managed by Vortex",
+          type: "info"
+        }
+      );
+    }
+
+    function sourceLabel() {
+      if (!mod.installedMod) {
+        return "Online";
+      }
+
+      if (mod.installedMod.installSource === "vortex") {
+        return "Vortex";
+      }
+
+      if (mod.installedMod.installSource === "native") {
+        return "Native";
+      }
+
+      return "Manual";
+    }
+
+    function loaderLabel() {
+      if (mod.installedMod?.loaderType === "bepinex-plugin") {
+        return "BepInEx";
+      }
+
+      if (mod.installedMod?.loaderType === "redloader-library" || mod.type === "Library") {
+        return "RedLoader Library";
+      }
+
+      return "RedLoader Mod";
+    }
 </script>
 
 <div class="feature-container description {isGrid?'grid-thing':''}">
   <span class="mod-title">{mod.name} (<a href={ModDatabase.getModPageUrl(mod)} target="_blank" rel="noreferrer" class="site-link">view on site</a>)</span>
+  <div class="meta-row">
+    <span class="source-pill source-{mod.installedMod?.installSource ?? 'online'}">{sourceLabel()}</span>
+    <span class="source-pill">{loaderLabel()}</span>
+    {#if mod.installedMod?.vortexPackage}
+      <span class="source-pill source-detail">{mod.installedMod.vortexPackage}</span>
+    {/if}
+  </div>
   <span class="description-content header-desc">{mod.shortDescription?mod.shortDescription:""}</span>
   <div class="mod-card-horizontal">
     <!-- <img class="cover-img" src="{mod.imageUrl?mod.imageUrl:"https://placehold.co/600x400/252525/FFF?text=No+Image"}" /> -->
@@ -218,6 +283,46 @@
     font-size: 1.2em;
     font-weight: bold;
     color: #a2a2a2;
+    text-align: left;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    margin: 0.4em 0 0.8em;
+  }
+
+  .source-pill {
+    background: #202832;
+    border: 1px solid rgba(252, 252, 252, 0.08);
+    border-radius: 6px;
+    color: #bfc8d2;
+    display: inline-block;
+    font-size: 0.74em;
+    font-weight: 700;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 0.35em 0.55em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .source-vortex {
+    color: #78d9f4;
+  }
+
+  .source-native {
+    color: #38d68d;
+  }
+
+  .source-manual {
+    color: #fdc66d;
+  }
+
+  .source-detail {
+    flex: 1 1 12em;
     text-align: left;
   }
 

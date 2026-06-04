@@ -3,6 +3,7 @@
 
 use std::fs::File;
 use std::fs;
+use std::io::Read;
 use zip::read::ZipArchive;
 
 use std::io::{BufReader, BufRead};
@@ -11,12 +12,19 @@ use regex::Regex;
 use serde::Serialize;
 
 use std::{error::Error, path::Path, path::PathBuf, ptr::null_mut};
+use reqwest::header::{HeaderMap, HeaderValue};
+use sha2::{Digest, Sha256};
 use windows::{
     core,
     Win32::Storage::FileSystem::{GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW, VS_FIXEDFILEINFO},
 };
 
 const SOTF_APP_ID: &str = "1326470";
+const NEXUS_API_BASE: &str = "https://api.nexusmods.com";
+const NEXUS_GAME_DOMAIN: &str = "sonsoftheforest";
+const NEXUS_CREDENTIAL_SERVICE: &str = "OpenACAI Mod Manager";
+const NEXUS_CREDENTIAL_ACCOUNT: &str = "nexusmods-api-key";
+const NEXUS_USER_AGENT: &str = "OpenACAI-Mod-Manager/0.1.2 (SonsOfTheForest; Windows)";
 
 #[derive(Serialize)]
 struct LoaderZipInspection {
@@ -30,26 +38,218 @@ struct LoaderZipInspection {
     errors: Vec<String>,
 }
 
+#[derive(Serialize)]
+struct NexusUser {
+    user_id: Option<u64>,
+    name: Option<String>,
+    profile_url: Option<String>,
+    is_premium: Option<bool>,
+    is_supporter: Option<bool>,
+}
+
+#[derive(Serialize)]
+struct NexusRateLimit {
+    hourly_limit: Option<String>,
+    hourly_remaining: Option<String>,
+    hourly_reset: Option<String>,
+    daily_limit: Option<String>,
+    daily_remaining: Option<String>,
+    daily_reset: Option<String>,
+}
+
+#[derive(Serialize)]
+struct NexusSession {
+    is_connected: bool,
+    user: Option<NexusUser>,
+    rate_limit: Option<NexusRateLimit>,
+    error: Option<String>,
+}
+
+#[derive(Serialize)]
+struct NexusModsResponse {
+    mods: serde_json::Value,
+    rate_limit: NexusRateLimit,
+}
+
 #[tauri::command]
-fn is_dotnet6_installed() -> Result<bool, String> {
+fn is_dotnet10_installed() -> Result<bool, String> {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let key = hklm.open_subkey_with_flags(
         r"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App", 
         KEY_READ
     ).map_err(|op| op.to_string())?;
 
-    let contains_dotnet_6 = key
+    let contains_dotnet_10 = key
         .enum_values()
         .filter_map(Result::ok)
-        .any(|(name, _)| name.starts_with("6."));
+        .any(|(name, _)| name.starts_with("10."));
 
-    Ok(contains_dotnet_6)
+    Ok(contains_dotnet_10)
+}
+
+#[tauri::command]
+async fn nexus_save_api_key(api_key: String) -> Result<NexusSession, String> {
+    let cleaned = api_key.trim().to_string();
+    if cleaned.len() < 16 {
+        return Err("Nexus API key is too short.".to_string());
+    }
+
+    let (user, rate_limit) = validate_nexus_key(&cleaned).await?;
+    nexus_credential_entry()?.set_password(&cleaned).map_err(|e| e.to_string())?;
+
+    Ok(NexusSession {
+        is_connected: true,
+        user: Some(user),
+        rate_limit: Some(rate_limit),
+        error: None,
+    })
+}
+
+#[tauri::command]
+async fn nexus_get_session() -> Result<NexusSession, String> {
+    let key = match read_nexus_api_key() {
+        Ok(Some(key)) => key,
+        Ok(None) => {
+            return Ok(NexusSession {
+                is_connected: false,
+                user: None,
+                rate_limit: None,
+                error: None,
+            });
+        }
+        Err(error) => return Err(error),
+    };
+
+    match validate_nexus_key(&key).await {
+        Ok((user, rate_limit)) => Ok(NexusSession {
+            is_connected: true,
+            user: Some(user),
+            rate_limit: Some(rate_limit),
+            error: None,
+        }),
+        Err(error) => Ok(NexusSession {
+            is_connected: false,
+            user: None,
+            rate_limit: None,
+            error: Some(error),
+        }),
+    }
+}
+
+#[tauri::command]
+fn nexus_clear_api_key() -> Result<(), String> {
+    match nexus_credential_entry()?.delete_password() {
+        Ok(_) => Ok(()),
+        Err(keyring::Error::NoEntry) => Ok(()),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn nexus_fetch_sotf_mods(view: String) -> Result<NexusModsResponse, String> {
+    let key = read_nexus_api_key()?.ok_or_else(|| "Connect a Nexus Mods account first.".to_string())?;
+    let endpoint = match view.as_str() {
+        "latest_added" => "latest_added",
+        "latest_updated" => "latest_updated",
+        "trending" => "trending",
+        _ => "trending",
+    };
+    let url = format!("{NEXUS_API_BASE}/v1/games/{NEXUS_GAME_DOMAIN}/mods/{endpoint}.json");
+    let response = nexus_client(&key).get(url).send().await.map_err(|e| e.to_string())?;
+    let rate_limit = read_rate_limit(response.headers());
+
+    if !response.status().is_success() {
+        return Err(format!("Nexus request failed: {}", response.status()));
+    }
+
+    let mods = response.json::<serde_json::Value>().await.map_err(|e| e.to_string())?;
+    Ok(NexusModsResponse { mods, rate_limit })
+}
+
+async fn validate_nexus_key(api_key: &str) -> Result<(NexusUser, NexusRateLimit), String> {
+    let response = nexus_client(api_key)
+        .get(format!("{NEXUS_API_BASE}/v1/users/validate.json"))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    let rate_limit = read_rate_limit(response.headers());
+
+    if !response.status().is_success() {
+        return Err(format!("Nexus account validation failed: {}", response.status()));
+    }
+
+    let value = response.json::<serde_json::Value>().await.map_err(|e| e.to_string())?;
+    let user = NexusUser {
+        user_id: value.get("user_id").and_then(|v| v.as_u64()),
+        name: value.get("name").and_then(|v| v.as_str()).map(|v| v.to_string()),
+        profile_url: value.get("profile_url").and_then(|v| v.as_str()).map(|v| v.to_string()),
+        is_premium: value.get("is_premium").and_then(|v| v.as_bool()),
+        is_supporter: value.get("is_supporter").and_then(|v| v.as_bool()),
+    };
+
+    Ok((user, rate_limit))
+}
+
+fn nexus_client(api_key: &str) -> reqwest::Client {
+    let mut headers = HeaderMap::new();
+    headers.insert("apikey", HeaderValue::from_str(api_key).unwrap_or_else(|_| HeaderValue::from_static("")));
+    headers.insert("User-Agent", HeaderValue::from_static(NEXUS_USER_AGENT));
+
+    reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .expect("failed to build Nexus API client")
+}
+
+fn read_rate_limit(headers: &HeaderMap) -> NexusRateLimit {
+    NexusRateLimit {
+        hourly_limit: read_header(headers, "X-RL-Hourly-Limit"),
+        hourly_remaining: read_header(headers, "X-RL-Hourly-Remaining"),
+        hourly_reset: read_header(headers, "X-RL-Hourly-Reset"),
+        daily_limit: read_header(headers, "X-RL-Daily-Limit"),
+        daily_remaining: read_header(headers, "X-RL-Daily-Remaining"),
+        daily_reset: read_header(headers, "X-RL-Daily-Reset"),
+    }
+}
+
+fn read_header(headers: &HeaderMap, name: &str) -> Option<String> {
+    headers.get(name).and_then(|value| value.to_str().ok()).map(|value| value.to_string())
+}
+
+fn nexus_credential_entry() -> Result<keyring::Entry, String> {
+    keyring::Entry::new(NEXUS_CREDENTIAL_SERVICE, NEXUS_CREDENTIAL_ACCOUNT).map_err(|e| e.to_string())
+}
+
+fn read_nexus_api_key() -> Result<Option<String>, String> {
+    match nexus_credential_entry()?.get_password() {
+        Ok(value) => Ok(Some(value)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(error) => Err(error.to_string()),
+    }
 }
 
 #[tauri::command]
 fn get_file_version(path: String) -> Result<String, String> {
     let desc = get_file_description(path).map_err(|e| e.to_string())?;
     Ok(desc)
+}
+
+#[tauri::command]
+fn sha256_file(path: String) -> Result<String, String> {
+    let mut file = File::open(path).map_err(|e| e.to_string())?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 1024 * 64];
+
+    loop {
+        let read = file.read(&mut buffer).map_err(|e| e.to_string())?;
+        if read == 0 {
+            break;
+        }
+
+        hasher.update(&buffer[..read]);
+    }
+
+    Ok(format!("{:X}", hasher.finalize()))
 }
 
 fn get_file_description(path: impl AsRef<Path>) -> Result<String, Box<dyn Error>> {
@@ -261,7 +461,18 @@ fn unzip_handler(source: String, destination: String) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![unzip_handler, inspect_openacai_loader_zip, get_steam_path, is_dotnet6_installed, get_file_version])
+        .invoke_handler(tauri::generate_handler![
+            unzip_handler,
+            inspect_openacai_loader_zip,
+            get_steam_path,
+            is_dotnet10_installed,
+            get_file_version,
+            nexus_save_api_key,
+            nexus_get_session,
+            nexus_clear_api_key,
+            nexus_fetch_sotf_mods,
+            sha256_file
+        ])
         .plugin(tauri_plugin_upload::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

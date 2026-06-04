@@ -1,3 +1,10 @@
+- 0.1.2
+  - Added a Vortex/Nexus Mods section with Nexus API-key login stored in the Windows credential store.
+  - Added source-aware mod inventory detection for RedLoader packages, RedLoader libraries, BepInEx plugins, native installs, manual installs, and Vortex-managed packages.
+  - Added OpenACAI Loader GitHub update/repair support using a remote manifest and SHA256 verification for loader-owned files.
+  - Added launch-time loader verification before starting Sons Of The Forest.
+  - Updated OpenACAI Loader packaging expectations for .NET 10 LTS.
+
 - Added infinite scroll instead of pre-fetching all mods.
 - Use sotf-mods api for searching with debounce.
 - Added icons for navigation bar.

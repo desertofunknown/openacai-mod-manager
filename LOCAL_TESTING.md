@@ -9,7 +9,7 @@ Use the refresh script to keep the GitHub prebuilt files and local test executab
 The script copies the portable executable to:
 
 ```text
-local-test\OpenACAI-Mod-Manager-0.1.1-x64-portable.exe
+local-test\OpenACAI-Mod-Manager-0.1.2-x64-portable.exe
 ```
 
 `local-test/` is ignored by Git so test-only binaries stay local.
