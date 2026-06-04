@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Greet from "./lib/InstallationComponent.svelte";
   import {
     gameExePath,
     isDotnetInstalled,
@@ -10,14 +9,11 @@
   } from "./lib/store";
   import Page1 from "./pages/MainPage.svelte";
   import Page2 from "./pages/Mods.svelte";
-  import Page3 from "./pages/AdditionalsPage.svelte";
   import Page4 from "./pages/Modding.svelte";
-  import Page5 from "./pages/ModPacks.svelte";
   import { onMount } from "svelte";
   import type { ComponentType } from "svelte";
   import { fade } from "svelte/transition";
   import { invoke } from "@tauri-apps/api";
-  import MdiStore24Hour from "virtual:icons/mdi/store-24-hour";
   import UilBox from "~icons/uil/box";
   import UilArrowCircleDown from "~icons/uil/arrow-circle-down";
   import UilBriefcase from '~icons/uil/briefcase'
@@ -140,7 +136,7 @@
 
   .progress {
     height: 100%;
-    background-color: #f54646;
+    background-color: #38d68d;
     transition: width 0.3s;
   }
 </style>

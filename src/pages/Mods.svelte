@@ -1,10 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { Command } from "@tauri-apps/api/shell";
-    import { get } from "svelte/store";
-    import { gameExePath, isPathValid, processProgress } from "../lib/store";
-    import { dialog, path, process } from "@tauri-apps/api";
-    import { processing, processName } from "../lib/store";
+    import { isPathValid } from "../lib/store";
+    import { dialog } from "@tauri-apps/api";
     import ModCard from "../lib/ModCard.svelte";
     import type { Mod } from "../lib/mods";
     import { ModDatabase, Sorting } from "../lib/mods";
@@ -29,12 +26,21 @@
         //processProgress.set(0);
         //processName.set("Loading mods...");
         isLoading = true;
-        let res = await ModDatabase.fetchMods(page, Sorting.newest, true, false, filterTerm);
-        let mods = res.data;
-        await ModDatabase.initModList(mods);
-		newBatch = mods;
-        filtered = [...filtered, ...newBatch];
-        isLoading = false;
+        try {
+            let res = await ModDatabase.fetchMods(page, Sorting.newest, true, false, filterTerm);
+            let mods = res.data;
+            await ModDatabase.initModList(mods);
+		    newBatch = mods;
+            filtered = [...filtered, ...newBatch];
+        } catch (error) {
+            newBatch = [];
+            await dialog.message(`Failed to load the mod catalog: ${error}`, {
+                title: "Mod catalog error",
+                type: "error"
+            });
+        } finally {
+            isLoading = false;
+        }
         //processing.set(false);
 	};
 
@@ -132,7 +138,7 @@
 
 <svelte:window on:resize={() => isGrid = window.innerWidth > 1000} />
 <div class="column">
-    {#if isPathValid}
+    {#if $isPathValid}
         <div class="row-center">
             <input class="generic-input search-input" placeholder="Search" type="text" on:input={handleSearchInput} />
             <button class="btn-left cat-btn" class:cat-btn-selected={onlineSelected} on:click={toggleOnline}>Online</button>
@@ -145,7 +151,7 @@
             {/each}
 
             {#if isLoading}
-            <SvgSpinnersBlocksWave style="font-size: 2em; color: #f65050; position: absolute; bottom: 40px;" />
+            <SvgSpinnersBlocksWave style="font-size: 2em; color: #38d68d; position: absolute; bottom: 40px;" />
             {/if}
 
             <InfiniteScroll
@@ -188,10 +194,6 @@
 
     .cat-btn-selected {
         background-color: #111;
-        color: #659cf0;
-    }
-
-    .no-corner {
-        border-radius: 0;
+        color: #38d68d;
     }
 </style>

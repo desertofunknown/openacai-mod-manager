@@ -12,6 +12,8 @@ It is based on Toni Macaroni's RedManager, but the main loader flow has been cha
 
 This public manager does not include the private OpenACAI anti-cheat/admin mod.
 
+Brand asset provenance is documented in `BRANDING.md`.
+
 ## Development
 
 ```powershell
@@ -32,3 +34,4 @@ OpenACAI-authored manager changes are licensed under `GPL-3.0-or-later`.
 
 The original RedManager project is licensed under `Apache-2.0`; its license text is preserved in `LICENSES/Apache-2.0.txt`, and attribution is preserved in `THIRD_PARTY_NOTICES.md`.
 
+The OpenACAI Loader packages managed by this app are built on BepInEx and RedLoader/SonsSdk components. Their LGPL notices are preserved by the loader package and called out in this manager's third-party notices.

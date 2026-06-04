@@ -3,6 +3,14 @@ Copyright (C) 2026 Alex Cooper
 
 OpenACAI Mod Manager contains original OpenACAI changes by Alex Cooper.
 It is based on RedManager by Toni Macaroni, originally licensed under Apache-2.0.
+It installs and manages OpenACAI Loader packages that are built on BepInEx's
+Unity IL2CPP loader and RedLoader/SonsSdk compatibility components.
+
+Upstream projects credited by this manager:
+
+- BepInEx, by the BepInEx team: https://github.com/BepInEx/BepInEx
+- RedLoader/SonsSdk and RedManager, by Toni Macaroni:
+  https://github.com/ToniMacaroni/RedLoader
+  https://github.com/ToniMacaroni/RedManager
 
 The private OpenACAI anti-cheat/admin mod is not part of this public repository.
-

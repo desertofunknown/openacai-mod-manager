@@ -6,8 +6,7 @@
   font-weight: 400;
 
   color: #f6f6f6;
-  background: url('https://raw.githubusercontent.com/tauri-apps/tauri/master/assets/tauri.png') no-repeat center center fixed;
-  background-color: #181818;
+  background: #12161c;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -57,12 +56,12 @@ body {
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #5aa8ff;
   text-decoration: inherit;
 }
 
 a:hover {
-  color: #24c8db;
+  color: #38d68d;
 }
 
 h1 {
@@ -82,14 +81,14 @@ button {
 }
 
 input {
-  background: #111;
+  background: #0e1116;
   /* border: 1px solid ; */
 }
 
 button {
   cursor: pointer;
   margin-bottom: 0.5em;
-  background: #252525;
+  background: #1a2028;
   border: 1px solid rgba(252,252,252,0.1);
 }
 
@@ -106,12 +105,12 @@ button {
 }
 
 button:hover {
-  border-color: #396cd8;
+  border-color: #5aa8ff;
 }
 
 button:active {
-  border-color: #396cd8;
-  background-color: #0f0f0f69;
+  border-color: #38d68d;
+  background-color: #0f1319;
 }
 
 input,
@@ -121,10 +120,10 @@ button {
 
 .tabs {
   display: flex;
-  background: #000;
+  background: #0b0f14;
   padding: 0.2em;
   margin: 0;
-  border-bottom: 1px solid #272d36;
+  border-bottom: 1px solid #25303d;
 }
 
 .tab {
@@ -143,12 +142,12 @@ button {
 
 .tab:hover {
   color: #ffffff;
-  background: #1b1b1b;
+  background: #18202a;
 }
 
 .activetab {
   color: #ffffff;
-  border-bottom: 2px solid #f65050;
+  border-bottom: 2px solid #38d68d;
   border-radius: 0.5em 0.5em 0 0;
 }
 

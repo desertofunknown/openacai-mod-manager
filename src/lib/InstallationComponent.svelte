@@ -1,7 +1,6 @@
 <script lang="ts">
   import { processProgress, processing } from './store';
   import { InstallMode, type FeatureInstaller } from "./featureInstaller";
-    import { GithubInfo, redLoaderInfo } from './githubInfo';
     import { onMount } from 'svelte';
 
   export let feature: FeatureInstaller;

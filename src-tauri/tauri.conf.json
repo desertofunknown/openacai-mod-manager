@@ -50,7 +50,12 @@
       },
       "http": {
         "all": true,
-        "scope": ["https://github.com/*"]
+        "scope": [
+          "https://github.com/*",
+          "https://gitlab.com/Godsring/*",
+          "https://api.sotf-mods.com/*",
+          "https://sotf-mods.com/*"
+        ]
       }
     },
     "bundle": {
@@ -58,7 +63,7 @@
       "targets": "all",
       "identifier": "com.alexcooper.openacai.modmanager",
       "icon": [
-        "icons/logo_img.png",
+        "icons/icon.png",
         "icons/logo_icon.ico"
       ]
     },

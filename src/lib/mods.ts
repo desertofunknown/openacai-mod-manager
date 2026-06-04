@@ -60,6 +60,12 @@ export type InstalledMod = {
     modName: string;
     isEnabled: boolean;
     manifest: ModManifest;
+    assemblyPath?: string;
+    enabledAssemblyPath?: string;
+    disabledAssemblyPath?: string;
+    packagePath?: string;
+    enabledPackagePath?: string;
+    disabledPackagePath?: string;
 }
 
 export type ModList = {
@@ -70,7 +76,9 @@ export enum Sorting {
     newest = "newest",
 }
 
-const ENDPOINT = "https://api.sotf-mods.com/api/";
+const MOD_REPOSITORY_API = "https://api.sotf-mods.com/api/";
+const MOD_REPOSITORY_WEB = "https://sotf-mods.com";
+const MAX_MANIFEST_SCAN_DEPTH = 4;
 
 export class ModDatabase {
 
@@ -86,20 +94,18 @@ export class ModDatabase {
             nsfw: boolean = false,
             searchTerm: string | null = null): Promise<EndpointResponse> {
 
-        let url = `${ENDPOINT}mods?&approved=${approved}&orderby=${sorting}&page=${page}&nsfw=${nsfw}`;
+        let url = `${MOD_REPOSITORY_API}mods?&approved=${approved}&orderby=${sorting}&page=${page}&nsfw=${nsfw}`;
         if(searchTerm) searchTerm = searchTerm.trim();
         if(searchTerm && searchTerm !== "")
         {
-            url += "&search=" + searchTerm;
+            url += "&search=" + encodeURIComponent(searchTerm);
         }
 
-        let result = await fetch(url);
-        return await result.json();
+        return await this.fetchJson<EndpointResponse>(url);
     }
 
     public static async fetchMod(id: string): Promise<Mod | null> {
-        let result = await fetch("https://api.sotf-mods.com/api/mods/" + id);
-        let resultData = await result.json();
+        let resultData = await this.fetchJson<any>(MOD_REPOSITORY_API + "mods/" + encodeURIComponent(id));
         if(resultData.status === false){
             return null;
         }
@@ -137,7 +143,13 @@ export class ModDatabase {
 
     public static async getInstalledMods(): Promise<Mod[]> {
         return await Promise.all(this.installedMods.map(async m=>{
-            let remoteMod = await this.fetchMod(m.modName);
+            let remoteMod: Mod | null = null;
+            try {
+                remoteMod = await this.fetchMod(m.modName);
+            } catch (error) {
+                console.log(`failed to fetch remote mod metadata for ${m.modName}`, error);
+            }
+
             if( remoteMod ) {
                 remoteMod.isInstalled = true;
                 remoteMod.installedMod = m;
@@ -161,6 +173,7 @@ export class ModDatabase {
                     slug: m.manifest.author
                 } as ModAuthor,
                 latestVersion: m.manifest.version,
+                type: m.manifest.type,
                 isInstalled: true,
                 installedMod: m
             } as Mod
@@ -192,10 +205,31 @@ export class ModDatabase {
     }
 
     public static openModPage(mod: Mod): void {
-        window.open(`https://sotf-mods.com/mods/${mod.user.slug}/${mod.slug}`);
+        window.open(this.getModPageUrl(mod));
     }
 
-    private static async initInstalledMod(folderPath: string, isEnabled: boolean): Promise<InstalledMod | null> {
+    public static getModPageUrl(mod: Mod): string {
+        return `${MOD_REPOSITORY_WEB}/mods/${mod.user.slug}/${mod.slug}`;
+    }
+
+    private static async fetchJson<T>(url: string): Promise<T> {
+        const result = await fetch(url);
+        if (!result.ok) {
+            throw new Error(`Request failed: ${result.status} ${result.statusText}`);
+        }
+
+        return await result.json();
+    }
+
+    private static async initInstalledMod(
+        folderPath: string,
+        isEnabled: boolean,
+        assemblyPath?: string,
+        enabledAssemblyPath?: string,
+        disabledAssemblyPath?: string,
+        packagePath?: string,
+        enabledPackagePath?: string,
+        disabledPackagePath?: string): Promise<InstalledMod | null> {
         try {
             let modManifestPath = await path.join(folderPath, "manifest.json");
             let modManifest = await fs.readTextFile(modManifestPath);
@@ -203,7 +237,13 @@ export class ModDatabase {
             return {
                 manifest: manifest,
                 isEnabled: isEnabled,
-                modName: await path.basename(folderPath)
+                modName: manifest.id ?? await path.basename(folderPath),
+                assemblyPath,
+                enabledAssemblyPath,
+                disabledAssemblyPath,
+                packagePath: packagePath ?? folderPath,
+                enabledPackagePath: enabledPackagePath ?? folderPath,
+                disabledPackagePath
             }
         } catch (error) {
             console.log(`failed to load mod ${await path.basename(folderPath)}`, error);
@@ -211,13 +251,78 @@ export class ModDatabase {
         }
     }
 
+    private static async readDirSafe(folderPath: string, logErrors: boolean = true): Promise<any[]> {
+        try {
+            if (!await fs.exists(folderPath)) {
+                return [];
+            }
+
+            return await fs.readDir(folderPath);
+        } catch (error) {
+            if (logErrors) {
+                console.log(`failed to read directory ${folderPath}`, error);
+            }
+
+            return [];
+        }
+    }
+
+    private static async findManifestFolders(folderPath: string, depth: number = 0): Promise<string[]> {
+        if (depth > MAX_MANIFEST_SCAN_DEPTH) {
+            return [];
+        }
+
+        let results: string[] = [];
+        const files = await this.readDirSafe(folderPath);
+        for (const file of files) {
+            const name = file.name ?? await path.basename(file.path);
+            if (name.toLowerCase() === "manifest.json") {
+                results.push(await path.dirname(file.path));
+                continue;
+            }
+
+            if (depth === MAX_MANIFEST_SCAN_DEPTH || name.toLowerCase().endsWith(".dll") || name.toLowerCase().endsWith(".disabled")) {
+                continue;
+            }
+
+            const children = await this.readDirSafe(file.path, false);
+            if (children.length !== 0) {
+                results = results.concat(await this.findManifestFolders(file.path, depth + 1));
+            }
+        }
+
+        return results;
+    }
+
+    private static normalizePath(value: string): string {
+        return value.replace(/\\/g, "/").replace(/\/+$/g, "").toLowerCase();
+    }
+
+    private static isDisabledPackagePath(folderPath: string): boolean {
+        const normalized = this.normalizePath(folderPath);
+        return normalized.includes("/_disabled/") || normalized.endsWith("/_disabled");
+    }
+
+    private static async addInstalledMod(mod: InstalledMod | null): Promise<void> {
+        if (!mod) {
+            return;
+        }
+
+        const existing = this.installedMods.find(existingMod =>
+            existingMod.manifest.id === mod.manifest.id || existingMod.modName === mod.modName);
+        if (!existing) {
+            this.installedMods.push(mod);
+        }
+    }
+
     public static async loadInstalledMods(): Promise<void> {
         this.installedMods = [];
 
-        let modPath = await path.join(await getDirectoryPath(), "Mods");
-        let libPath = await path.join(await getDirectoryPath(), "Libs");
-        let files = await fs.readDir(modPath);
-        files = files.concat(await fs.readDir(libPath));
+        let modPath = await getModsDir();
+        let libPath = await getLibsDir();
+        let files = await this.readDirSafe(modPath);
+        files = files.concat(await this.readDirSafe(libPath));
+        const scannedManifestFolders = new Set<string>();
 
         for (let i = 0; i < files.length; i++) {
             let file = files[i];
@@ -225,6 +330,8 @@ export class ModDatabase {
                 let isEnabled = file.name?.endsWith(".dll");
                 let folderName = file.name?.replace(".dll", "").replace(".disabled", "");
                 let folderPath = await path.join(await path.dirname(file.path), folderName);
+                let enabledAssemblyPath = await path.join(await path.dirname(file.path), folderName + ".dll");
+                let disabledAssemblyPath = await path.join(await path.dirname(file.path), folderName + ".disabled");
 
                 if(!(await fs.exists(folderPath)))
                 {
@@ -232,9 +339,44 @@ export class ModDatabase {
                     continue;
                 }
 
-                let mod = await this.initInstalledMod(folderPath, isEnabled);
-                if(mod)
-                    this.installedMods.push(mod);
+                scannedManifestFolders.add(this.normalizePath(folderPath));
+                let mod = await this.initInstalledMod(
+                    folderPath,
+                    isEnabled,
+                    file.path,
+                    enabledAssemblyPath,
+                    disabledAssemblyPath,
+                    folderPath,
+                    folderPath);
+                await this.addInstalledMod(mod);
+            }
+        }
+
+        for (const rootPath of [modPath, libPath]) {
+            const manifestFolders = await this.findManifestFolders(rootPath);
+            for (const manifestFolder of manifestFolders) {
+                const key = this.normalizePath(manifestFolder);
+                if (scannedManifestFolders.has(key)) {
+                    continue;
+                }
+
+                const packageName = await path.basename(manifestFolder);
+                const disabled = this.isDisabledPackagePath(manifestFolder);
+                const disabledPath = await path.join(modPath, "_Disabled", packageName);
+                const enabledPath = disabled
+                    ? await path.join(modPath, packageName)
+                    : manifestFolder;
+
+                let mod = await this.initInstalledMod(
+                    manifestFolder,
+                    !disabled,
+                    undefined,
+                    undefined,
+                    undefined,
+                    manifestFolder,
+                    enabledPath,
+                    disabled ? manifestFolder : disabledPath);
+                await this.addInstalledMod(mod);
             }
         }
     }
@@ -290,7 +432,7 @@ export class ModDatabase {
 
     public static async installMod(mod: Mod): Promise<void> {
         let gamePath = await getDirectoryPath();
-        let modUrl = `https://sotf-mods.com/mods/${mod.user.slug}/${mod.slug}/download/${mod.latestVersion}`;
+        let modUrl = `${MOD_REPOSITORY_WEB}/mods/${mod.user.slug}/${mod.slug}/download/${mod.latestVersion}`;
         await downloadAndInstall(gamePath, modUrl, mod.name);
 
         for (const dependency of mod.dependencies) {
@@ -309,6 +451,10 @@ export class ModDatabase {
     }
 
     private static async getPathsForMod(mod: InstalledMod): Promise<string[]> {
+        if (mod.assemblyPath || mod.packagePath) {
+            return [mod.assemblyPath, mod.packagePath].filter(Boolean) as string[];
+        }
+
         let gamePath = await getDirectoryPath();
 
         let subFolder = mod.manifest.type == "Mod" ? "Mods" : "Libs";
@@ -328,6 +474,44 @@ export class ModDatabase {
     }
 
     public static async toggleMod(mod: InstalledMod, shouldEnable: boolean): Promise<void> {
+        if (mod.enabledAssemblyPath && mod.disabledAssemblyPath) {
+            if(shouldEnable && (await fs.exists(mod.disabledAssemblyPath))) {
+                await fs.renameFile(mod.disabledAssemblyPath, mod.enabledAssemblyPath);
+                mod.isEnabled = true;
+                mod.assemblyPath = mod.enabledAssemblyPath;
+            } else if(!shouldEnable && (await fs.exists(mod.enabledAssemblyPath))) {
+                await fs.renameFile(mod.enabledAssemblyPath, mod.disabledAssemblyPath);
+                mod.isEnabled = false;
+                mod.assemblyPath = mod.disabledAssemblyPath;
+            }
+
+            return;
+        }
+
+        if (mod.enabledPackagePath && mod.disabledPackagePath) {
+            if(shouldEnable && (await fs.exists(mod.disabledPackagePath))) {
+                const parentDir = await path.dirname(mod.enabledPackagePath);
+                if (!await fs.exists(parentDir)) {
+                    await fs.createDir(parentDir, { recursive: true });
+                }
+
+                await fs.renameFile(mod.disabledPackagePath, mod.enabledPackagePath);
+                mod.isEnabled = true;
+                mod.packagePath = mod.enabledPackagePath;
+            } else if(!shouldEnable && (await fs.exists(mod.enabledPackagePath))) {
+                const parentDir = await path.dirname(mod.disabledPackagePath);
+                if (!await fs.exists(parentDir)) {
+                    await fs.createDir(parentDir, { recursive: true });
+                }
+
+                await fs.renameFile(mod.enabledPackagePath, mod.disabledPackagePath);
+                mod.isEnabled = false;
+                mod.packagePath = mod.disabledPackagePath;
+            }
+
+            return;
+        }
+
         let modPath = await getDirectoryPath();
         let modDllPath = await path.join(modPath, "Mods", `${mod.modName}.dll`);
         let modDisabledPath = await path.join(modPath, "Mods", `${mod.modName}.disabled`);

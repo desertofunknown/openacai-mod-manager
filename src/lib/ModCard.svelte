@@ -1,11 +1,8 @@
 <script lang="ts">
   import { processProgress, processing } from './store';
-  import { InstallMode, type FeatureInstaller } from "./featureInstaller";
-    import { GithubInfo, redLoaderInfo } from './githubInfo';
     import { onMount, createEventDispatcher } from 'svelte';
-    import { ModDatabase, type Mod, type InstalledMod } from './mods';
+    import { ModDatabase, type Mod } from './mods';
     import StatusButton from './StatusButton.svelte';
-    import { downloadAndInstall } from './utils';
 
     export let mod: Mod;
     export let isGrid: boolean = false;
@@ -38,10 +35,12 @@
       processing.set(true);
       processProgress.set(0);
 
-      await ModDatabase.uninstallMod(mod.installedMod);
-      await refresh();
-
-      processing.set(false);
+      try {
+        await ModDatabase.uninstallMod(mod.installedMod);
+        await refresh();
+      } finally {
+        processing.set(false);
+      }
 
       dispatch("refreshMods");
     }
@@ -50,10 +49,12 @@
       processing.set(true);
       processProgress.set(0);
 
-      await ModDatabase.installMod(mod);
-      await refresh();
-
-      processing.set(false);
+      try {
+        await ModDatabase.installMod(mod);
+        await refresh();
+      } finally {
+        processing.set(false);
+      }
 
       dispatch("refreshMods");
     }
@@ -103,7 +104,7 @@
 </script>
 
 <div class="feature-container description {isGrid?'grid-thing':''}">
-  <span class="mod-title">{mod.name} (<a on:click={() => ModDatabase.openModPage(mod)} class="site-link">view on site</a>)</span>
+  <span class="mod-title">{mod.name} (<a href={ModDatabase.getModPageUrl(mod)} target="_blank" rel="noreferrer" class="site-link">view on site</a>)</span>
   <span class="description-content header-desc">{mod.shortDescription?mod.shortDescription:""}</span>
   <div class="mod-card-horizontal">
     <!-- <img class="cover-img" src="{mod.imageUrl?mod.imageUrl:"https://placehold.co/600x400/252525/FFF?text=No+Image"}" /> -->
@@ -221,7 +222,6 @@
   }
 
   .site-link {
-    cursor: pointer;
     font-weight: 700;
     font-size: 0.65em;
     text-transform: lowercase;
