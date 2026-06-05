@@ -70,7 +70,7 @@
     }
 
     try {
-      let hasDotnet = await invoke("is_dotnet10_installed");
+      let hasDotnet = await invoke("is_dotnet11_installed");
       console.log(hasDotnet);
       isDotnetInstalled.set(hasDotnet as boolean);
     } catch (err) {
@@ -126,19 +126,20 @@
     color: white;
     font-size: 24px;
     gap: 20px;
+    z-index: 20;
   }
 
   .progress-bar {
     background: rgba(255, 255, 255, 0.2);
     width: 70%;
     height: 20px;
-    border-radius: 10px;
+    border-radius: 2px;
     overflow: hidden;
   }
 
   .progress {
     height: 100%;
-    background-color: #38d68d;
+    background-color: #e5e5e5;
     transition: width 0.3s;
   }
 </style>

@@ -40,7 +40,7 @@
         box-sizing: border-box;
         height: 100%; /* Ensures that it takes the full height of its parent */
         margin: 0; /* Removes default margin from input */
-        border-radius: 8px 0 0 8px;
+        border-radius: 2px 0 0 2px;
         width: 80%;
         color: #a2a2a2;
         text-align: center;
@@ -48,7 +48,7 @@
     }
 
     .select-btn {
-        border-radius: 0 8px 8px 0;
+        border-radius: 0 2px 2px 0;
         height: 100%; /* Ensures that it takes the full height of its parent */
         margin: 0; /* Removes default margin from button */
         box-sizing: border-box;

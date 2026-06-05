@@ -1,6 +1,6 @@
 [package]
 name = "openacai-mod-manager"
-version = "0.1.2"
+version = "0.2.0"
 description = "OpenACAI mod manager for the BepInEx-first OpenACAI Loader with RedLoader compatibility."
 authors = ["Alex Cooper"]
 license = "GPL-3.0-or-later"

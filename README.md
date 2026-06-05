@@ -11,8 +11,8 @@ OpenACAI Mod Manager is a Tauri/Svelte manager for installing and maintaining th
 It is based on Toni Macaroni's RedManager, but the main loader flow has been changed for OpenACAI Loader:
 
 - Select and install a local `OpenACAILoader.zip`.
-- Install or repair the latest public OpenACAI Loader package from GitHub using a signed-by-hash update manifest.
-- Verify loader-owned files with SHA256 before launching the game.
+- Install or repair the latest public OpenACAI Loader package from GitHub Release assets using a signed-by-hash update manifest.
+- Verify loader-owned files with SHA256 before launching the game, and keep a cached last-known release manifest for offline comparison.
 - Detect whether installed mods are RedLoader packages, RedLoader libraries, BepInEx plugins, native-store installs, manual installs, or Nexus/Vortex-managed packages.
 - Connect a Nexus Mods account through a locally stored API key and browse Nexus/Vortex-side Sons Of The Forest mods with cross-store install status.
 - Detect the OpenACAI Loader bridge through `BepInEx\plugins\OpenACAILoader` and `BepInEx\plugins\RedLoaderBepInExCompat`.
@@ -29,10 +29,11 @@ Upstream/fork lineage is documented in `UPSTREAMS.md`.
 
 ## Prebuilt Downloads
 
-The current Windows builds are kept in `prebuilt/` for direct GitHub downloads:
+The current Windows builds are published as GitHub Release assets and mirrored in `prebuilt/` for direct repository downloads:
 
-- [Windows portable executable](prebuilt/OpenACAI-Mod-Manager-0.1.2-x64-portable.exe)
-- [Windows setup executable](prebuilt/OpenACAI-Mod-Manager-0.1.2-x64-setup.exe)
+- [Latest GitHub release](https://github.com/desertofunknown/openacai-mod-manager/releases/latest)
+- [Windows portable executable](prebuilt/OpenACAI-Mod-Manager-0.2.0-x64-portable.exe)
+- [Windows setup executable](prebuilt/OpenACAI-Mod-Manager-0.2.0-x64-setup.exe)
 - [OpenACAI icon](prebuilt/OpenACAI-Mod-Manager.ico)
 - [SHA256 checksums](prebuilt/SHA256SUMS.txt)
 

@@ -1,4 +1,5 @@
 import { fs, path } from "@tauri-apps/api";
+import { fetch as tauriFetch, ResponseType } from "@tauri-apps/api/http";
 import { invoke } from "@tauri-apps/api/tauri";
 import { download } from "tauri-plugin-upload-api";
 import semver from "semver";
@@ -17,6 +18,7 @@ export type LoaderUpdateManifest = {
     name: string;
     version: string;
     generatedUtc: string;
+    source?: LoaderManifestSource;
     package: {
         fileName: string;
         downloadUrl: string;
@@ -35,6 +37,8 @@ export type LoaderUpdateManifest = {
     files: LoaderManifestFile[];
 };
 
+export type LoaderManifestSource = "remote" | "cache";
+
 export type LoaderIntegrityIssue = {
     path: string;
     reason: "missing" | "hash-mismatch";
@@ -46,11 +50,17 @@ export type LoaderIntegrityReport = {
     manifest: LoaderUpdateManifest;
     installedVersion: string | null;
     needsUpdate: boolean;
+    versionOutdated: boolean;
+    totalFiles: number;
+    verifiedFiles: number;
+    checkedAtUtc: string;
+    latestManifestSource: LoaderManifestSource;
     issues: LoaderIntegrityIssue[];
 };
 
-const LOADER_MANIFEST_URL = "https://raw.githubusercontent.com/desertofunknown/openacai-loader/main/prebuilt/OpenACAILoader.manifest.json";
+const LOADER_MANIFEST_URL = "https://github.com/desertofunknown/openacai-loader/releases/latest/download/OpenACAILoader.manifest.json";
 const INSTALLED_MANIFEST_PATH = "BepInEx/plugins/OpenACAILoader/openacai-loader.manifest.json";
+const CACHED_LATEST_MANIFEST_PATH = "BepInEx/plugins/OpenACAILoader/openacai-manager-latest-loader-manifest.json";
 
 export class OpenAcaiLoaderInstaller extends BaseZipInstaller {
     private manifest: LoaderUpdateManifest | null = null;
@@ -81,17 +91,26 @@ export class OpenAcaiLoaderInstaller extends BaseZipInstaller {
 }
 
 export async function fetchLatestLoaderManifest(): Promise<LoaderUpdateManifest> {
-    const response = await fetch(`${LOADER_MANIFEST_URL}?t=${Date.now()}`);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch OpenACAI Loader manifest: ${response.status} ${response.statusText}`);
-    }
+    try {
+        const response = await tauriFetch<LoaderUpdateManifest>(`${LOADER_MANIFEST_URL}?t=${Date.now()}`, {
+            method: "GET",
+            responseType: ResponseType.JSON
+        });
+        if (response.status < 200 || response.status >= 300) {
+            throw new Error(`Failed to fetch OpenACAI Loader manifest: ${response.status}`);
+        }
 
-    const manifest = await response.json() as LoaderUpdateManifest;
-    if (!manifest.version || !manifest.package?.downloadUrl || !manifest.package?.sha256 || !Array.isArray(manifest.files)) {
-        throw new Error("OpenACAI Loader manifest is missing required update metadata.");
-    }
+        const manifest = validateLoaderManifest(response.data as LoaderUpdateManifest, "remote");
+        await writeCachedLatestManifest(manifest);
+        return manifest;
+    } catch (error) {
+        const cachedManifest = await readCachedLatestManifest();
+        if (cachedManifest) {
+            return cachedManifest;
+        }
 
-    return manifest;
+        throw error;
+    }
 }
 
 export async function verifyInstalledLoader(manifest?: LoaderUpdateManifest): Promise<LoaderIntegrityReport> {
@@ -99,8 +118,13 @@ export async function verifyInstalledLoader(manifest?: LoaderUpdateManifest): Pr
     const gameRoot = await getDirectoryPath();
     const installedVersion = await getInstalledLoaderVersion();
     const issues: LoaderIntegrityIssue[] = [];
+    const totalFiles = manifest.files.length;
+    let verifiedFiles = 0;
 
-    for (const file of manifest.files) {
+    processName.set(`Verifying OpenACAI Loader files...`);
+    processProgress.set(0);
+
+    for (const [index, file] of manifest.files.entries()) {
         const installedPath = await path.join(gameRoot, file.path);
         if (!await fs.exists(installedPath)) {
             issues.push({
@@ -108,6 +132,7 @@ export async function verifyInstalledLoader(manifest?: LoaderUpdateManifest): Pr
                 reason: "missing",
                 expectedSha256: file.sha256
             });
+            processProgress.set(((index + 1) / Math.max(totalFiles, 1)) * 100);
             continue;
         }
 
@@ -119,17 +144,29 @@ export async function verifyInstalledLoader(manifest?: LoaderUpdateManifest): Pr
                 expectedSha256: file.sha256,
                 actualSha256
             });
+        } else {
+            verifiedFiles += 1;
         }
+
+        processProgress.set(((index + 1) / Math.max(totalFiles, 1)) * 100);
     }
 
-    const needsUpdate = !installedVersion
-        || semver.valid(installedVersion) && semver.valid(manifest.version) && semver.lt(installedVersion, manifest.version)
-        || issues.length > 0;
+    const versionOutdated = !!(installedVersion
+        && semver.valid(installedVersion)
+        && semver.valid(manifest.version)
+        && semver.lt(installedVersion, manifest.version));
+
+    const needsUpdate = !installedVersion || issues.length > 0;
 
     return {
         manifest,
         installedVersion,
         needsUpdate: !!needsUpdate,
+        versionOutdated,
+        totalFiles,
+        verifiedFiles,
+        checkedAtUtc: new Date().toISOString(),
+        latestManifestSource: manifest.source ?? "remote",
         issues
     };
 }
@@ -203,6 +240,46 @@ export async function getInstalledLoaderVersion(): Promise<string | null> {
 
 async function hashFile(filePath: string): Promise<string> {
     return await invoke<string>("sha256_file", { path: filePath });
+}
+
+function validateLoaderManifest(manifest: LoaderUpdateManifest, source: LoaderManifestSource): LoaderUpdateManifest {
+    if (!manifest.version || !manifest.package?.downloadUrl || !manifest.package?.sha256 || !Array.isArray(manifest.files)) {
+        throw new Error("OpenACAI Loader manifest is missing required update metadata.");
+    }
+
+    return {
+        ...manifest,
+        source
+    };
+}
+
+async function writeCachedLatestManifest(manifest: LoaderUpdateManifest): Promise<void> {
+    try {
+        const gameRoot = await getDirectoryPath();
+        const cacheDir = await path.join(gameRoot, "BepInEx/plugins/OpenACAILoader");
+        const cachePath = await path.join(gameRoot, CACHED_LATEST_MANIFEST_PATH);
+        const cacheableManifest = { ...manifest };
+        delete cacheableManifest.source;
+
+        await fs.createDir(cacheDir, { recursive: true });
+        await fs.writeTextFile(cachePath, JSON.stringify(cacheableManifest, null, 2));
+    } catch (error) {
+        console.log("Failed to cache latest OpenACAI Loader manifest", error);
+    }
+}
+
+async function readCachedLatestManifest(): Promise<LoaderUpdateManifest | null> {
+    try {
+        const cachePath = await path.join(await getDirectoryPath(), CACHED_LATEST_MANIFEST_PATH);
+        if (!await fs.exists(cachePath)) {
+            return null;
+        }
+
+        return validateLoaderManifest(JSON.parse(await fs.readTextFile(cachePath)) as LoaderUpdateManifest, "cache");
+    } catch (error) {
+        console.log("Failed to read cached OpenACAI Loader manifest", error);
+        return null;
+    }
 }
 
 async function thisUnzip(sourcePath: string, destinationPath: string): Promise<void> {

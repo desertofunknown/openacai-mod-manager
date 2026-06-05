@@ -24,7 +24,7 @@ const NEXUS_API_BASE: &str = "https://api.nexusmods.com";
 const NEXUS_GAME_DOMAIN: &str = "sonsoftheforest";
 const NEXUS_CREDENTIAL_SERVICE: &str = "OpenACAI Mod Manager";
 const NEXUS_CREDENTIAL_ACCOUNT: &str = "nexusmods-api-key";
-const NEXUS_USER_AGENT: &str = "OpenACAI-Mod-Manager/0.1.2 (SonsOfTheForest; Windows)";
+const NEXUS_USER_AGENT: &str = "OpenACAI-Mod-Manager/0.2.0 (SonsOfTheForest; Windows)";
 
 #[derive(Serialize)]
 struct LoaderZipInspection {
@@ -73,18 +73,27 @@ struct NexusModsResponse {
 
 #[tauri::command]
 fn is_dotnet10_installed() -> Result<bool, String> {
+    is_dotnet_major_installed("10.")
+}
+
+#[tauri::command]
+fn is_dotnet11_installed() -> Result<bool, String> {
+    is_dotnet_major_installed("11.")
+}
+
+fn is_dotnet_major_installed(version_prefix: &str) -> Result<bool, String> {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let key = hklm.open_subkey_with_flags(
         r"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App", 
         KEY_READ
     ).map_err(|op| op.to_string())?;
 
-    let contains_dotnet_10 = key
+    let contains_runtime = key
         .enum_values()
         .filter_map(Result::ok)
-        .any(|(name, _)| name.starts_with("10."));
+        .any(|(name, _)| name.starts_with(version_prefix));
 
-    Ok(contains_dotnet_10)
+    Ok(contains_runtime)
 }
 
 #[tauri::command]
@@ -466,6 +475,7 @@ fn main() {
             inspect_openacai_loader_zip,
             get_steam_path,
             is_dotnet10_installed,
+            is_dotnet11_installed,
             get_file_version,
             nexus_save_api_key,
             nexus_get_session,

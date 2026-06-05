@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "OpenACAI Mod Manager",
-    "version": "0.1.2"
+    "version": "0.2.0"
   },
   "tauri": {
     "allowlist": {
@@ -52,6 +52,8 @@
         "all": true,
         "scope": [
           "https://github.com/*",
+          "https://release-assets.githubusercontent.com/*",
+          "https://objects.githubusercontent.com/*",
           "https://raw.githubusercontent.com/desertofunknown/*",
           "https://gitlab.com/Godsring/*",
           "https://api.sotf-mods.com/*",

@@ -41,7 +41,7 @@ $env:AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE = "your-public-profile"
 Optional:
 
 ```powershell
-$env:AZURE_ARTIFACT_SIGNING_CORRELATION_ID = "openacai-mod-manager-0.1.2"
+$env:AZURE_ARTIFACT_SIGNING_CORRELATION_ID = "openacai-mod-manager-0.2.0"
 $env:SIGNTOOL_EXE = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
 $env:AZURE_ARTIFACT_SIGNING_DLIB = "C:\path\to\Azure.CodeSigning.Dlib.dll"
 ```

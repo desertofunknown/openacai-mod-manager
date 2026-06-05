@@ -98,8 +98,9 @@
 
   .description {
     padding: 10px;
-    border-radius: 10px;
-    border: 2px dashed #414141;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(42, 42, 42, 0.58);
   }
 
   .description-content {
@@ -111,10 +112,10 @@
   }
 
   .btn-left {
-    border-radius: 10px 0 0 10px;
+    border-radius: 2px 0 0 2px;
   }
 
   .btn-right {
-    border-radius: 0 10px 10px 0;
+    border-radius: 0 2px 2px 0;
   }
 </style>

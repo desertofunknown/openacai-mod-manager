@@ -256,7 +256,7 @@ openAcaiLoaderUninstaller.overrideCheckFiles = [
 
 export let openAcaiLoaderFeature = new FeatureInstaller(openAcaiLoaderInstaller, openAcaiLoaderUninstaller, "BepInEx\\plugins\\OpenACAILoader\\openacai-loader.manifest.json");
 openAcaiLoaderFeature.additionalFoldersToCreate = ["Mods"];
-openAcaiLoaderFeature.description = "Installs or repairs the BepInEx-first OpenACAI Loader package from the public GitHub prebuilt manifest, then verifies installed file hashes.";
+openAcaiLoaderFeature.description = "Installs or repairs the BepInEx-first OpenACAI Loader package from the public GitHub release manifest, then verifies installed file hashes.";
 
 export let ueFeature = new FeatureInstaller(ueInstaller, ueUninstaller);
 ueFeature.description = "UnityExplorer is a modding tool which lets you analyze and manipulate the game at runtime."

@@ -1,3 +1,11 @@
+- 0.2.0
+  - Moved OpenACAI Loader update checks to GitHub Release assets instead of raw branch prebuilts.
+  - Added live loader-file SHA256 verification progress and cached the latest release manifest for last-known-good comparisons.
+  - Changed update behavior so repair/update is offered only when loader-owned files are missing or hash-mismatched.
+  - Updated runtime checks and user messaging for the `.NET 11` loader preview track.
+  - Refreshed the manager UI toward a darker Sons-style options shell with flatter controls and chromatic hover states.
+  - Rebuilt and signed portable/setup EXEs as `0.2.0`.
+
 - 0.1.2
   - Added a Vortex/Nexus Mods section with Nexus API-key login stored in the Windows credential store.
   - Added source-aware mod inventory detection for RedLoader packages, RedLoader libraries, BepInEx plugins, native installs, manual installs, and Vortex-managed packages.

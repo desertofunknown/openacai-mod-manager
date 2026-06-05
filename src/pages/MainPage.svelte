@@ -20,7 +20,7 @@
 
     $: if ($isPathValid && !checkedLoader) {
         checkedLoader = true;
-        refreshLoaderStatus();
+        refreshLoaderStatus(false);
     }
 
     async function openFolder() {
@@ -51,13 +51,22 @@
         await shell.open("steam://rungameid/1326470");
     }
 
-    async function refreshLoaderStatus() {
+    async function refreshLoaderStatus(showProgress = true) {
+        if (showProgress) {
+            processing.set(true);
+            processProgress.set(0);
+        }
+
         try {
             loaderReport = await verifyInstalledLoader();
             updateLoaderStatus(loaderReport);
         } catch (error) {
             loaderStatus = `Loader update manifest unavailable: ${error}`;
             loaderStatusClass = "manual";
+        } finally {
+            if (showProgress) {
+                processing.set(false);
+            }
         }
     }
 
@@ -90,13 +99,27 @@
         }
 
         if (report.needsUpdate) {
-            loaderStatus = `${report.issues.length} file issue${report.issues.length === 1 ? "" : "s"} detected. Latest: ${report.manifest.version}. Installed: ${report.installedVersion}.`;
+            loaderStatus = `${report.verifiedFiles}/${report.totalFiles} files verified. ${report.issues.length} loader file issue${report.issues.length === 1 ? "" : "s"} detected. Latest: ${report.manifest.version}. Installed: ${report.installedVersion}.`;
             loaderStatusClass = "update";
             return;
         }
 
-        loaderStatus = `Verified ${report.installedVersion} (${report.manifest.runtime.targetFramework}, .NET ${report.manifest.runtime.dotnetRuntimeVersion})`;
+        loaderStatus = `Verified ${report.verifiedFiles}/${report.totalFiles} loader files for ${report.manifest.version} (${report.manifest.runtime.targetFramework}, .NET ${report.manifest.runtime.dotnetRuntimeVersion})`;
         loaderStatusClass = "install";
+    }
+
+    function loaderDetail(report: LoaderIntegrityReport | null): string | null {
+        if (!report) {
+            return null;
+        }
+
+        if (report.issues.length > 0) {
+            return `${report.issues[0].path} - ${report.issues[0].reason}`;
+        }
+
+        const source = report.latestManifestSource === "cache" ? "cached release manifest" : "GitHub release manifest";
+        const checkedAt = new Date(report.checkedAtUtc).toLocaleTimeString();
+        return `Checked ${checkedAt} using ${source}. ${report.versionOutdated ? "Installed metadata is older, but files match the current manifest." : "No loader file drift detected."}`;
     }
 </script>
 
@@ -118,12 +141,12 @@
         <section class="loader-health">
             <span class="description-content">OpenACAI Loader integrity</span>
             <span class="health-status {loaderStatusClass}">{loaderStatus}</span>
-            {#if loaderReport?.issues?.length}
-                <span class="health-detail">{loaderReport.issues[0].path} - {loaderReport.issues[0].reason}</span>
+            {#if loaderDetail(loaderReport)}
+                <span class="health-detail">{loaderDetail(loaderReport)}</span>
             {/if}
             <div class="health-actions">
-                <button class="tool-button" on:click={refreshLoaderStatus}>Check</button>
-                <button class="tool-button install" on:click={repairLoader}>Verify / Repair</button>
+                <button class="tool-button" on:click={() => refreshLoaderStatus(true)}>Check</button>
+                <button class="tool-button install" on:click={repairLoader}>{loaderReport?.needsUpdate ? "Update / Repair" : "Verify / Repair"}</button>
             </div>
         </section>
     {/if}
@@ -135,7 +158,7 @@
     {/if}
     {#if !$isDotnetInstalled}
         <br>
-        <span style="color: #a2a2a2;font-weight: 500"><a href="https://dotnet.microsoft.com/en-us/download/dotnet/10.0" target="_blank">.NET 10</a> is recommended for current OpenACAI tooling.</span>
+        <span class="runtime-note"><a href="https://dotnet.microsoft.com/en-us/download/dotnet/11.0" target="_blank">.NET 11</a> is recommended for current OpenACAI loader builds.</span>
     {/if}
 </div>
 
@@ -149,9 +172,9 @@
 
     .brand-link {
         align-items: center;
-        background: #10161d;
-        border: 1px solid rgba(183, 236, 252, 0.14);
-        border-radius: 8px;
+        background: rgba(42, 42, 42, 0.74);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 2px;
         display: flex;
         gap: 1em;
         justify-content: center;
@@ -174,31 +197,28 @@
     }
 
     .brand-title {
-        color: #eefcff;
+        color: #f4f4f4;
         font-size: 1.7em;
         font-weight: 700;
+        text-transform: uppercase;
     }
 
     .brand-subtitle {
-        color: #78d9f4;
+        color: #b8b8b8;
         font-size: 0.9em;
         font-weight: 600;
         margin-top: 0.4em;
     }
 
     .tool-button {
-        /* background: transparent; */
-        /* border: 0; */
         background-color: #1e1e1e;
-        color: #999;
-        /* transition: background-color 0.25s; */
-        /* color: #646cff; */
+        color: #c9c9c9;
     }
 
     .loader-health {
-        background: #10161d;
-        border: 1px solid rgba(183, 236, 252, 0.14);
-        border-radius: 8px;
+        background: rgba(42, 42, 42, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 2px;
         display: flex;
         flex-direction: column;
         gap: 0.5em;
@@ -222,7 +242,7 @@
     }
 
     .health-detail {
-        color: #fdc66d;
+        color: #c7c7c7;
         font-size: 0.8em;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -237,5 +257,10 @@
     .health-actions > button {
         flex: 1;
         margin: 0;
+    }
+
+    .runtime-note {
+        color: #a2a2a2;
+        font-weight: 500;
     }
 </style>
