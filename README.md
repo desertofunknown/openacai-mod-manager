@@ -36,7 +36,7 @@ The current Windows builds are kept in `prebuilt/` for direct GitHub downloads:
 - [OpenACAI icon](prebuilt/OpenACAI-Mod-Manager.ico)
 - [SHA256 checksums](prebuilt/SHA256SUMS.txt)
 
-These builds are unsigned, so Windows SmartScreen and some browsers may warn on first download. Verify the SHA256 checksum before running. Code-signing guidance is documented in `SIGNING.md`.
+These builds are signed with the OpenACAI Inc Azure Trusted Signing certificate. Windows SmartScreen and some browsers may still warn while publisher reputation builds. Verify the SHA256 checksum and Authenticode signature before release. Code-signing guidance is documented in `SIGNING.md`.
 
 GitHub release assets should mirror this folder when tagged releases are created. MSI builds are intentionally not published while the current MSI launch issue is investigated.
 
