@@ -1,0 +1,15 @@
+Sons of the Forest UI asset notice
+
+The textures, splash logo textures, and font file in this folder were extracted
+from the local Sons of the Forest installation for OpenACAI Mod Manager visual
+integration.
+
+Current extracted splash/logo assets include:
+- `EndnightSplashLogo` from `SonsOfTheForest_Data\sharedassets0.assets`.
+- `EndnightSplashLogoBlur` from `SonsOfTheForest_Data\sharedassets0.assets`.
+
+These assets are copyright property of Endnight Games. Per project-provided
+permission, they are bundled only into this open-source, noncommercial
+OpenACAI mod manager for Sons of the Forest compatibility. They are not
+available for commercial reuse or for reuse outside the permitted
+OpenACAI/Sons of the Forest mod-management context.
